@@ -1,0 +1,67 @@
+networks:
+  cdc-with-debezium-network:
+    name: cdc-with-debezium-network
+    driver: bridge
+    external: false
+
+services:
+  cdc-with-debezium-postgres:
+    image: debezium/postgres:17-alpine
+    container_name: cdc-with-debezium-postgres
+    hostname: cdc-with-debezium-postgres
+    restart: always
+    ports:
+      - '5443:5432'
+    environment:
+      POSTGRES_PASSWORD: 123
+      POSTGRES_USER: postgres
+      POSTGRES_DB: cdc-with-debezium
+    volumes:
+      - cdc-with-debezium-postgres-data:/var/lib/postgresql/data
+    networks:
+      - cdc-with-debezium-network
+
+  cdc-with-debezium-kafka:
+    image: bitnami/kafka:4.0-debian-12
+    container_name: cdc-with-debezium-kafka
+    hostname: cdc-with-debezium-kafka
+    restart: always
+    ports:
+      - '9092:9092'
+    environment:
+      KAFKA_CFG_NODE_ID: 1
+      KAFKA_KRAFT_CLUSTER_ID: q0k00yjQRaqWmAAAZv955w # base64 UUID
+      KAFKA_CFG_PROCESS_ROLES: controller,broker
+      KAFKA_CFG_LISTENERS: INTERNAL://cdc-with-debezium-kafka:29092,CONTROLLER://cdc-with-debezium-kafka:29093,EXTERNAL://0.0.0.0:9092
+      KAFKA_CFG_ADVERTISED_LISTENERS: INTERNAL://cdc-with-debezium-kafka:29092,EXTERNAL://localhost:9092
+      KAFKA_CFG_LISTENER_SECURITY_PROTOCOL_MAP: CONTROLLER:PLAINTEXT,INTERNAL:PLAINTEXT,EXTERNAL:PLAINTEXT
+      KAFKA_CFG_CONTROLLER_QUORUM_VOTERS: 1@cdc-with-debezium-kafka:29093
+      KAFKA_CFG_INTER_BROKER_LISTENER_NAME: INTERNAL
+      KAFKA_CFG_CONTROLLER_LISTENER_NAMES: CONTROLLER
+    networks:
+      - cdc-with-debezium-network
+
+  cdc-with-debezium-connect:
+    image: debezium/connect:3.0.0.Final
+    container_name: cdc-with-debezium-connect
+    hostname: cdc-with-debezium-connect
+    restart: always
+    ports:
+      - '8083:8083'
+    environment:
+      BOOTSTRAP_SERVERS: cdc-with-debezium-kafka:29092
+      GROUP_ID: 1
+      CONFIG_STORAGE_TOPIC: my_connect_configs
+      OFFSET_STORAGE_TOPIC: my_connect_offsets
+      STATUS_STORAGE_TOPIC: my_connect_statuses
+      ENABLE_DEBEZIUM_SCRIPTING: 'true'
+    links:
+      - cdc-with-debezium-kafka
+      - cdc-with-debezium-postgres
+    networks:
+      - cdc-with-debezium-network
+
+volumes:
+  cdc-with-debezium-postgres-data:
+    name: cdc-with-debezium-postgres-data
+    driver: local
