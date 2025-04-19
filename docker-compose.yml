@@ -6,7 +6,7 @@ networks:
 
 services:
   cdc-with-debezium-postgres:
-    image: debezium/postgres:17-alpine
+    image: debezium/postgres:16-alpine
     container_name: cdc-with-debezium-postgres
     hostname: cdc-with-debezium-postgres
     restart: always
