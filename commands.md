@@ -1,4 +1,7 @@
-inspired by https://dev.to/emtiajium/track-every-postgresql-data-change-using-debezium-5e19
+inspired by
+* https://dev.to/emtiajium/track-every-postgresql-data-change-using-debezium-5e19
+* https://medium.com/@arijit.mazumdar/beyond-the-basics-of-debezium-for-postgresql-part-1-d1c6952ae110
+* https://medium.com/@techphile/using-postgres-and-debezium-connector-for-cdc-9fea124f124a
 
 ## Docker
 * docker-compose up
@@ -29,7 +32,6 @@ CREATE TABLE "User"
 * curl -i -X DELETE localhost:8083/connectors/cdc-with-debezium-connector/
 * JSON_STRING=$(jq -n --arg ip "$IP" '{"name": "cdc-with-debezium-connector", "config": {"connector.class": "io.debezium.connector.postgresql.PostgresConnector","database.hostname": $ip, "database.port": "5443","database.user": "postgres","database.password": "123","database.dbname": "cdc-with-debezium","database.server.id": "184054","table.include.list": "public.User","topic.prefix": "cdc-with-debezium-topic"}}')
 
-
 ```json
 curl --location 'http://localhost:8083/connectors' \
    --header 'Accept: application/json' \
@@ -45,10 +47,16 @@ curl --location 'http://localhost:8083/connectors' \
 ## PostgreSQL (II)
 ```sql
 INSERT INTO "User" (email, name)
-VALUES ('ehasan+1@firecrackervocabulary.com', CONCAT('name_', (random() * 1000)::INTEGER::VARCHAR))
-ON CONFLICT (email) DO UPDATE SET name = EXCLUDED.name
-RETURNING *;
+VALUES ('test@test.com', 'name_0');
+
+UPDATE "User"
+SET name = 'name_1'
+WHERE email = 'test@test.com';
+
+DELETE
+FROM "User"
+WHERE email = 'test@test.com';
 ```
 
 ## Kafka (III)
-docker exec cdc-with-debezium-kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic cdc-with-debezium-topic.public.User --from-beginning | jq '.'
+* docker exec cdc-with-debezium-kafka /opt/bitnami/kafka/bin/kafka-console-consumer.sh --bootstrap-server localhost:9092 --topic cdc-with-debezium-topic.public.User --from-beginning | jq '.'
