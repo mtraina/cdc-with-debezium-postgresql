@@ -2,6 +2,7 @@ inspired by
 * https://dev.to/emtiajium/track-every-postgresql-data-change-using-debezium-5e19
 * https://medium.com/@arijit.mazumdar/beyond-the-basics-of-debezium-for-postgresql-part-1-d1c6952ae110
 * https://medium.com/@techphile/using-postgres-and-debezium-connector-for-cdc-9fea124f124a
+* https://dev.to/thegroo/simplest-spring-kafka-producer-and-consumer-kotlin-version-dn8
 
 ## Docker
 * docker-compose up
@@ -30,7 +31,10 @@ CREATE TABLE "User"
 * echo $IP
 
 * curl -i -X DELETE localhost:8083/connectors/cdc-with-debezium-connector/
-* JSON_STRING=$(jq -n --arg ip "$IP" '{"name": "cdc-with-debezium-connector", "config": {"connector.class": "io.debezium.connector.postgresql.PostgresConnector","database.hostname": $ip, "database.port": "5443","database.user": "postgres","database.password": "123","database.dbname": "cdc-with-debezium","database.server.id": "184054","table.include.list": "public.User","topic.prefix": "cdc-with-debezium-topic"}}')
+* Config arguments
+  * Basic: JSON_STRING=$(jq -n --arg ip "$IP" '{"name": "cdc-with-debezium-connector", "config": {"connector.class": "io.debezium.connector.postgresql.PostgresConnector","database.hostname": $ip, "database.port": "5443","database.user": "postgres","database.password": "123","database.dbname": "cdc-with-debezium","database.server.id": "184054","table.include.list": "public.User","topic.prefix": "cdc-with-debezium-topic"}}')
+  * Simplified payload: JSON_STRING=$(jq -n --arg ip "$IP" '{"name": "cdc-with-debezium-connector", "config": {"connector.class": "io.debezium.connector.postgresql.PostgresConnector","database.hostname": $ip, "database.port": "5443","database.user": "postgres","database.password": "123","database.dbname": "cdc-with-debezium","database.server.id": "184054","table.include.list": "public.User","topic.prefix": "cdc-with-debezium-topic","transforms": "unwrap","transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState","transforms.unwrap.drop.tombstones": "true", "transforms.unwrap.delete.handling.mode": "rewrite", "transforms.unwrap.add.fields": "op,table,lsn"}}')
+  * Simplified payload, no schema: JSON_STRING=$(jq -n --arg ip "$IP" '{"name": "cdc-with-debezium-connector", "config": {"connector.class": "io.debezium.connector.postgresql.PostgresConnector", "database.hostname": $ip, "database.port": "5443", "database.user": "postgres", "database.password": "123", "database.dbname": "cdc-with-debezium", "database.server.id": "184054", "table.include.list": "public.User", "topic.prefix": "cdc-with-debezium-topic", "transforms": "unwrap", "transforms.unwrap.type": "io.debezium.transforms.ExtractNewRecordState", "transforms.unwrap.drop.tombstones": "true", "transforms.unwrap.delete.handling.mode": "rewrite", "transforms.unwrap.add.fields": "op,table,lsn", "key.converter": "org.apache.kafka.connect.json.JsonConverter", "key.converter.schemas.enable": "false", "value.converter": "org.apache.kafka.connect.json.JsonConverter", "value.converter.schemas.enable": "false"}}')
 
 ```json
 curl --location 'http://localhost:8083/connectors' \
